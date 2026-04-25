@@ -32,7 +32,6 @@
     padding: 40px 20px 60px;
   }
 
-  /* Header */
   header {
     width: 100%;
     max-width: 640px;
@@ -85,7 +84,6 @@
     margin-top: 4px;
   }
 
-  /* Card */
   .card {
     width: 100%;
     max-width: 640px;
@@ -113,6 +111,43 @@
     flex: 1;
     height: 1px;
     background: var(--border);
+  }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 9px 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .mode-btn.active {
+    background: var(--red);
+    color: var(--white);
+  }
+
+  .mode-btn:not(.active):hover {
+    color: var(--white);
+    background: rgba(255,255,255,0.05);
   }
 
   /* Input */
@@ -156,16 +191,29 @@
     font-family: 'DM Mono', monospace;
     color: var(--white);
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s;
     -moz-appearance: textfield;
   }
 
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-  input[type="number"]:focus {
+  input[type="number"]:focus { border-color: var(--red); }
+
+  input[type="number"].error {
     border-color: var(--red);
+    background: rgba(232,52,26,0.06);
   }
+
+  .input-error-msg {
+    font-size: 11px;
+    color: var(--red);
+    font-family: 'DM Mono', monospace;
+    margin-top: 7px;
+    display: none;
+  }
+
+  .input-error-msg.show { display: block; }
 
   /* Sliders */
   .params-grid {
@@ -183,6 +231,7 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 14px;
+    transition: border-color 0.2s;
   }
 
   .param-header {
@@ -205,22 +254,23 @@
     font-size: 16px;
     font-weight: 500;
     color: var(--white);
+    transition: color 0.25s;
   }
 
   input[type="range"] {
     width: 100%;
     -webkit-appearance: none;
     height: 3px;
-    background: var(--border);
     border-radius: 2px;
     outline: none;
+    transition: background 0.25s;
   }
 
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 16px; height: 16px;
     border-radius: 50%;
-    background: var(--red);
+    background: var(--thumb-color, var(--green));
     cursor: pointer;
     transition: transform 0.1s;
   }
@@ -261,23 +311,37 @@
     line-height: 1;
   }
 
-  .result-value.highlight {
-    color: var(--red);
+  .result-value.highlight { color: var(--red); }
+  .result-value.mult { font-size: clamp(22px, 4vw, 32px); color: var(--yellow); }
+
+  .result-delta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 5px;
   }
 
-  .result-value.mult {
-    font-size: clamp(22px, 4vw, 32px);
-    color: var(--yellow);
-  }
+  .result-delta.up { color: var(--yellow); }
+  .result-delta.same { color: var(--green); }
 
   /* Waterfall */
   .waterfall {
     display: flex;
     flex-direction: column;
-    gap: 0;
     border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
+  }
+
+  .wf-group-header {
+    padding: 5px 16px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #444;
+    background: #0D0D0D;
+    border-bottom: 1px solid var(--border);
   }
 
   .wf-row {
@@ -290,7 +354,6 @@
   }
 
   .wf-row:last-child { border-bottom: none; }
-
   .wf-row:hover { background: rgba(255,255,255,0.03); }
 
   .wf-name {
@@ -311,9 +374,8 @@
   .wf-amount.total { color: var(--white); font-size: 14px; }
   .wf-amount.profit { color: var(--green); font-size: 14px; }
 
-  .wf-row.subtotal { background: rgba(255,255,255,0.03); }
+  .wf-row.subtotal { background: rgba(255,255,255,0.025); }
   .wf-row.final { background: rgba(76,175,125,0.08); }
-
   .wf-name.bold { color: var(--white); font-weight: 700; }
 
   /* Semáforo */
@@ -329,16 +391,15 @@
     transition: all 0.3s;
   }
 
-  .semaforo.ok { background: rgba(76,175,125,0.12); border: 1px solid rgba(76,175,125,0.3); color: var(--green); }
-  .semaforo.warn { background: rgba(245,200,66,0.1); border: 1px solid rgba(245,200,66,0.3); color: var(--yellow); }
-  .semaforo.bad { background: rgba(232,52,26,0.1); border: 1px solid rgba(232,52,26,0.3); color: var(--red); }
+  .semaforo.ok  { background: rgba(76,175,125,0.12); border: 1px solid rgba(76,175,125,0.3); color: var(--green); }
+  .semaforo.warn { background: rgba(245,200,66,0.10); border: 1px solid rgba(245,200,66,0.3); color: var(--yellow); }
+  .semaforo.bad  { background: rgba(232,52,26,0.10); border: 1px solid rgba(232,52,26,0.3); color: var(--red); }
 
   .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .dot.ok { background: var(--green); }
+  .dot.ok   { background: var(--green); }
   .dot.warn { background: var(--yellow); }
-  .dot.bad { background: var(--red); }
+  .dot.bad  { background: var(--red); }
 
-  /* Footer */
   footer {
     margin-top: 8px;
     font-size: 11px;
@@ -361,6 +422,8 @@
     margin-left: 6px;
     vertical-align: middle;
   }
+
+  .hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -371,11 +434,16 @@
     <span class="logo-text">Pimentón</span>
   </div>
   <h1>Calculadora de<br><span>Pricing</span> Delivery</h1>
-  <div class="subtitle">// food delivery · pricing engine v1.0</div>
+  <div class="subtitle">// food delivery · pricing engine v1.1</div>
 </header>
 
-<!-- INPUT COSTO -->
+<!-- INPUTS -->
 <div class="card">
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-forward" onclick="setMode('forward')">→ Calcular precio</button>
+    <button class="mode-btn" id="btn-reverse" onclick="setMode('reverse')">← Ver margen real</button>
+  </div>
+
   <div class="section-label">Costo de mercadería (CMV)</div>
   <div class="input-group">
     <label>Costo del plato / combo</label>
@@ -383,6 +451,17 @@
       <span class="currency">$</span>
       <input type="number" id="costo" value="6000" min="1" step="100">
     </div>
+    <div class="input-error-msg" id="costo-error">Ingresá un costo mayor a $0</div>
+  </div>
+
+  <!-- Reverse mode: precio real input -->
+  <div class="input-group hidden" id="reverse-precio-group">
+    <label>Precio lista (real / de mercado)</label>
+    <div class="input-wrap">
+      <span class="currency">$</span>
+      <input type="number" id="precio-real" value="15000" min="1" step="100">
+    </div>
+    <div class="input-error-msg" id="precio-real-error">Ingresá un precio mayor a $0</div>
   </div>
 
   <div class="section-label">Parámetros <span class="tag">editables</span></div>
@@ -392,42 +471,42 @@
         <span class="param-name">Descuento</span>
         <span class="param-val" id="desc-val">15%</span>
       </div>
-      <input type="range" id="descuento" min="0" max="40" value="15" step="1">
+      <input type="range" id="descuento" min="0" max="40" value="15" step="1" data-good-high="false">
     </div>
     <div class="param-item">
       <div class="param-header">
         <span class="param-name">Comisión app</span>
         <span class="param-val" id="com-val">25%</span>
       </div>
-      <input type="range" id="comision" min="10" max="40" value="25" step="1">
+      <input type="range" id="comision" min="10" max="40" value="25" step="1" data-good-high="false">
     </div>
     <div class="param-item">
       <div class="param-header">
         <span class="param-name">Ads</span>
         <span class="param-val" id="ads-val">3%</span>
       </div>
-      <input type="range" id="ads" min="0" max="15" value="3" step="1">
+      <input type="range" id="ads" min="0" max="15" value="3" step="1" data-good-high="false">
     </div>
     <div class="param-item">
       <div class="param-header">
         <span class="param-name">Impuestos</span>
         <span class="param-val" id="imp-val">5%</span>
       </div>
-      <input type="range" id="impuestos" min="0" max="15" value="5" step="1">
+      <input type="range" id="impuestos" min="0" max="15" value="5" step="1" data-good-high="false">
     </div>
     <div class="param-item">
       <div class="param-header">
         <span class="param-name">Errores</span>
         <span class="param-val" id="err-val">2%</span>
       </div>
-      <input type="range" id="errores" min="0" max="10" value="2" step="0.5">
+      <input type="range" id="errores" min="0" max="10" value="2" step="0.5" data-good-high="false">
     </div>
-    <div class="param-item">
+    <div class="param-item" id="margen-item">
       <div class="param-header">
         <span class="param-name">Margen obj.</span>
         <span class="param-val" id="mg-val">30%</span>
       </div>
-      <input type="range" id="margen" min="10" max="50" value="30" step="1">
+      <input type="range" id="margen" min="10" max="50" value="30" step="1" data-good-high="true">
     </div>
   </div>
 </div>
@@ -436,7 +515,8 @@
 <div class="card">
   <div class="section-label">Resultado</div>
 
-  <div class="result-main">
+  <!-- Forward mode results -->
+  <div class="result-main" id="forward-results">
     <div class="result-block">
       <div class="result-label">Precio lista ideal</div>
       <div class="result-value highlight" id="precio-lista">$15.957</div>
@@ -448,6 +528,23 @@
     <div class="result-block">
       <div class="result-label">Precio sugerido</div>
       <div class="result-value" id="precio-redondeado">$16.500</div>
+      <div class="result-delta" id="precio-delta">+$543 sobre ideal</div>
+    </div>
+  </div>
+
+  <!-- Reverse mode results -->
+  <div class="result-main hidden" id="reverse-results">
+    <div class="result-block">
+      <div class="result-label">Precio ingresado</div>
+      <div class="result-value" id="rev-precio">$15.000</div>
+    </div>
+    <div class="result-block">
+      <div class="result-label">Multiplicador real</div>
+      <div class="result-value mult" id="rev-mult">× 2.50</div>
+    </div>
+    <div class="result-block">
+      <div class="result-label">Margen real</div>
+      <div class="result-value" id="rev-margen">27.3%</div>
     </div>
   </div>
 
@@ -457,12 +554,14 @@
       <span class="wf-name bold">Precio lista</span>
       <span class="wf-amount total" id="wf-lista">$15.957</span>
     </div>
+
+    <div class="wf-group-header">Plataforma</div>
     <div class="wf-row">
       <span class="wf-name">− Descuento (sobre lista)</span>
       <span class="wf-amount deduction" id="wf-desc">−$2.394</span>
     </div>
     <div class="wf-row subtotal">
-      <span class="wf-name bold">Venta neta de descuento</span>
+      <span class="wf-name bold">Venta neta</span>
       <span class="wf-amount total" id="wf-neta">$13.563</span>
     </div>
     <div class="wf-row">
@@ -473,6 +572,8 @@
       <span class="wf-name">− Ads (sobre lista)</span>
       <span class="wf-amount deduction" id="wf-ads">−$479</span>
     </div>
+
+    <div class="wf-group-header">Cargas operativas</div>
     <div class="wf-row">
       <span class="wf-name">− Impuestos (sobre lista)</span>
       <span class="wf-amount deduction" id="wf-imp">−$798</span>
@@ -481,6 +582,8 @@
       <span class="wf-name">− Errores (sobre lista)</span>
       <span class="wf-amount deduction" id="wf-err">−$319</span>
     </div>
+
+    <div class="wf-group-header">Resultado</div>
     <div class="wf-row subtotal">
       <span class="wf-name bold">Lo que queda</span>
       <span class="wf-amount total" id="wf-queda">$8.576</span>
@@ -501,88 +604,225 @@
   </div>
 </div>
 
-<footer>pimenton.io · pricing engine · solo para uso interno</footer>
+<footer>pimenton.io · pricing engine · v1.1</footer>
 
 <script>
+  let MODE = 'forward';
+
+  /* ── Slider fill + thumb color ── */
+  function updateSliderStyle(el) {
+    const min = parseFloat(el.min);
+    const max = parseFloat(el.max);
+    const val = parseFloat(el.value);
+    const pct = ((val - min) / (max - min)) * 100;
+    const goodHigh = el.dataset.goodHigh === 'true';
+
+    let color;
+    if (goodHigh) {
+      color = pct >= 55 ? '#4CAF7D' : pct >= 30 ? '#F5C842' : '#E8341A';
+    } else {
+      color = pct <= 30 ? '#4CAF7D' : pct <= 60 ? '#F5C842' : '#E8341A';
+    }
+
+    el.style.background = `linear-gradient(to right, ${color} ${pct}%, #2A2A2A ${pct}%)`;
+    el.style.setProperty('--thumb-color', color);
+
+    const valId = el.id.replace('descuento','desc').replace('comision','com')
+                        .replace('impuestos','imp').replace('errores','err')
+                        .replace('margen','mg') + '-val';
+    const valEl = document.getElementById(valId);
+    if (valEl) valEl.style.color = color;
+  }
+
+  /* ── Formatting ── */
   function fmt(n) {
     return '$' + Math.round(n).toLocaleString('es-AR');
   }
 
   function roundUp(n) {
-    if (n < 1000) return Math.ceil(n / 50) * 50;
-    if (n < 10000) return Math.ceil(n / 500) * 500;
-    return Math.ceil(n / 1000) * 1000;
+    if (n < 1000)  return Math.ceil(n / 50)   * 50;
+    if (n < 10000) return Math.ceil(n / 500)  * 500;
+    return          Math.ceil(n / 1000) * 1000;
   }
 
-  function calc() {
-    const costo = parseFloat(document.getElementById('costo').value) || 0;
-    const descPct = parseFloat(document.getElementById('descuento').value) / 100;
-    const comPct = parseFloat(document.getElementById('comision').value) / 100;
-    const adsPct = parseFloat(document.getElementById('ads').value) / 100;
-    const impPct = parseFloat(document.getElementById('impuestos').value) / 100;
-    const errPct = parseFloat(document.getElementById('errores').value) / 100;
-    const margenObj = parseFloat(document.getElementById('margen').value) / 100;
+  /* ── Validation ── */
+  function validateInput(id, errorId) {
+    const el = document.getElementById(id);
+    const errEl = document.getElementById(errorId);
+    const val = parseFloat(el.value);
+    if (!val || val <= 0) {
+      el.classList.add('error');
+      errEl.classList.add('show');
+      return false;
+    }
+    el.classList.remove('error');
+    errEl.classList.remove('show');
+    return true;
+  }
 
-    document.getElementById('desc-val').textContent = Math.round(descPct * 100) + '%';
-    document.getElementById('com-val').textContent = Math.round(comPct * 100) + '%';
-    document.getElementById('ads-val').textContent = Math.round(adsPct * 100) + '%';
-    document.getElementById('imp-val').textContent = Math.round(impPct * 100) + '%';
-    document.getElementById('err-val').textContent = parseFloat(document.getElementById('errores').value) + '%';
-    document.getElementById('mg-val').textContent = Math.round(margenObj * 100) + '%';
-
-    const ventaNeta = 1 - descPct;
-    const comision = ventaNeta * comPct;
-    const otrosCargas = adsPct + impPct + errPct;
-    const quedaPct = 1 - descPct - comision - otrosCargas;
-
-    const PL = costo / (quedaPct * (1 - margenObj));
-    const mult = PL / costo;
-
-    const descMonto = PL * descPct;
-    const netaDesc = PL - descMonto;
-    const comMonto = netaDesc * comPct;
-    const adsMonto = PL * adsPct;
-    const impMonto = PL * impPct;
-    const errMonto = PL * errPct;
-    const queda = PL - descMonto - comMonto - adsMonto - impMonto - errMonto;
-    const ganancia = queda - costo;
-    const ganPct = (ganancia / queda * 100).toFixed(1);
-
-    document.getElementById('precio-lista').textContent = fmt(PL);
-    document.getElementById('multiplicador').textContent = '× ' + mult.toFixed(2);
-    document.getElementById('precio-redondeado').textContent = fmt(roundUp(PL));
-
-    document.getElementById('wf-lista').textContent = fmt(PL);
-    document.getElementById('wf-desc').textContent = '−' + fmt(descMonto);
-    document.getElementById('wf-neta').textContent = fmt(netaDesc);
-    document.getElementById('wf-com').textContent = '−' + fmt(comMonto);
-    document.getElementById('wf-ads').textContent = '−' + fmt(adsMonto);
-    document.getElementById('wf-imp').textContent = '−' + fmt(impMonto);
-    document.getElementById('wf-err').textContent = '−' + fmt(errMonto);
-    document.getElementById('wf-queda').textContent = fmt(queda);
-    document.getElementById('wf-cmv').textContent = '−' + fmt(costo);
-    document.getElementById('wf-ganancia').textContent = fmt(ganancia) + ' · ' + ganPct + '%';
-
+  /* ── Semáforo helper ── */
+  function setSemaforo(state, text) {
     const sem = document.getElementById('semaforo');
     const dot = document.getElementById('sem-dot');
     const txt = document.getElementById('sem-text');
-
-    sem.className = 'semaforo ok';
-    dot.className = 'dot ok';
-    txt.textContent = `✓ Precio correcto — ${ganPct}% de margen sobre venta neta`;
-
-    if (quedaPct <= 0) {
-      sem.className = 'semaforo bad';
-      dot.className = 'dot bad';
-      txt.textContent = '✗ Imposible — las cargas superan el 100% del precio';
-    } else if (mult < 2.5) {
-      sem.className = 'semaforo bad';
-      dot.className = 'dot bad';
-      txt.textContent = `⚠ Multiplicador muy bajo (×${mult.toFixed(2)}) — no alcanzás el margen objetivo`;
-    }
+    sem.className = `semaforo ${state}`;
+    dot.className = `dot ${state}`;
+    txt.textContent = text;
   }
 
+  /* ── Main calc ── */
+  function calc() {
+    const costoValid = validateInput('costo', 'costo-error');
+    const costo = parseFloat(document.getElementById('costo').value) || 0;
+
+    const descPct  = parseFloat(document.getElementById('descuento').value) / 100;
+    const comPct   = parseFloat(document.getElementById('comision').value) / 100;
+    const adsPct   = parseFloat(document.getElementById('ads').value) / 100;
+    const impPct   = parseFloat(document.getElementById('impuestos').value) / 100;
+    const errPct   = parseFloat(document.getElementById('errores').value) / 100;
+    const margenObj = parseFloat(document.getElementById('margen').value) / 100;
+
+    // Update slider labels
+    document.getElementById('desc-val').textContent = Math.round(descPct * 100) + '%';
+    document.getElementById('com-val').textContent  = Math.round(comPct * 100) + '%';
+    document.getElementById('ads-val').textContent  = Math.round(adsPct * 100) + '%';
+    document.getElementById('imp-val').textContent  = Math.round(impPct * 100) + '%';
+    document.getElementById('err-val').textContent  = parseFloat(document.getElementById('errores').value) + '%';
+    document.getElementById('mg-val').textContent   = Math.round(margenObj * 100) + '%';
+
+    // Update slider styles
+    document.querySelectorAll('input[type="range"]').forEach(updateSliderStyle);
+
+    // Shared math
+    const ventaNeta  = 1 - descPct;
+    const comision   = ventaNeta * comPct;
+    const quedaPct   = 1 - descPct - comision - adsPct - impPct - errPct;
+
+    if (!costoValid || costo <= 0) return;
+
+    let PL;
+
+    if (MODE === 'forward') {
+      // Calculate PL from costo + target margin
+      if (quedaPct <= 0) {
+        setSemaforo('bad', '✗ Imposible — las cargas superan el 100% del precio');
+        return;
+      }
+      PL = costo / (quedaPct * (1 - margenObj));
+    } else {
+      // Reverse: use the entered price
+      const precioValid = validateInput('precio-real', 'precio-real-error');
+      if (!precioValid) return;
+      PL = parseFloat(document.getElementById('precio-real').value) || 0;
+    }
+
+    const mult       = PL / costo;
+    const descMonto  = PL * descPct;
+    const netaDesc   = PL - descMonto;
+    const comMonto   = netaDesc * comPct;
+    const adsMonto   = PL * adsPct;
+    const impMonto   = PL * impPct;
+    const errMonto   = PL * errPct;
+    const queda      = PL - descMonto - comMonto - adsMonto - impMonto - errMonto;
+    const ganancia   = queda - costo;
+    const ganPct     = queda > 0 ? (ganancia / queda * 100) : 0;
+
+    // Mode-specific results display
+    if (MODE === 'forward') {
+      const rounded = roundUp(PL);
+      const delta   = rounded - PL;
+      document.getElementById('precio-lista').textContent    = fmt(PL);
+      document.getElementById('multiplicador').textContent   = '× ' + mult.toFixed(2);
+      document.getElementById('precio-redondeado').textContent = fmt(rounded);
+
+      const deltaEl = document.getElementById('precio-delta');
+      deltaEl.textContent = `+${fmt(delta).replace('$','')} sobre ideal`;
+      deltaEl.className   = delta === 0 ? 'result-delta same' : 'result-delta up';
+    } else {
+      const revMargen = document.getElementById('rev-margen');
+      revMargen.textContent = ganPct.toFixed(1) + '%';
+      revMargen.style.color = ganPct >= 25 ? 'var(--green)' : ganPct >= 15 ? 'var(--yellow)' : 'var(--red)';
+      document.getElementById('rev-precio').textContent = fmt(PL);
+      document.getElementById('rev-mult').textContent   = '× ' + mult.toFixed(2);
+    }
+
+    // Waterfall
+    document.getElementById('wf-lista').textContent   = fmt(PL);
+    document.getElementById('wf-desc').textContent    = '−' + fmt(descMonto);
+    document.getElementById('wf-neta').textContent    = fmt(netaDesc);
+    document.getElementById('wf-com').textContent     = '−' + fmt(comMonto);
+    document.getElementById('wf-ads').textContent     = '−' + fmt(adsMonto);
+    document.getElementById('wf-imp').textContent     = '−' + fmt(impMonto);
+    document.getElementById('wf-err').textContent     = '−' + fmt(errMonto);
+    document.getElementById('wf-queda').textContent   = fmt(queda);
+    document.getElementById('wf-cmv').textContent     = '−' + fmt(costo);
+    document.getElementById('wf-ganancia').textContent = fmt(ganancia) + ' · ' + ganPct.toFixed(1) + '%';
+
+    // Semáforo
+    if (quedaPct <= 0) {
+      setSemaforo('bad', '✗ Imposible — las cargas superan el 100% del precio');
+    } else if (MODE === 'forward') {
+      if (mult < 2.5) {
+        setSemaforo('bad',  `✗ Multiplicador muy bajo (×${mult.toFixed(2)}) — revisá los parámetros`);
+      } else if (mult < 3.0) {
+        setSemaforo('warn', `⚡ Multiplicador ajustado (×${mult.toFixed(2)}) — margen en zona de riesgo`);
+      } else {
+        setSemaforo('ok',   `✓ Precio sólido — ${ganPct.toFixed(1)}% de margen sobre venta neta`);
+      }
+    } else {
+      if (ganPct < 15) {
+        setSemaforo('bad',  `✗ Margen muy bajo (${ganPct.toFixed(1)}%) — este precio no es rentable`);
+      } else if (ganPct < 25) {
+        setSemaforo('warn', `⚡ Margen ajustado (${ganPct.toFixed(1)}%) — considerá subir el precio`);
+      } else {
+        setSemaforo('ok',   `✓ Margen saludable — ${ganPct.toFixed(1)}% sobre venta neta`);
+      }
+    }
+
+    saveToStorage();
+  }
+
+  /* ── Mode switch ── */
+  function setMode(mode) {
+    MODE = mode;
+    document.getElementById('btn-forward').classList.toggle('active', mode === 'forward');
+    document.getElementById('btn-reverse').classList.toggle('active', mode === 'reverse');
+    document.getElementById('reverse-precio-group').classList.toggle('hidden', mode === 'forward');
+    document.getElementById('margen-item').classList.toggle('hidden', mode === 'reverse');
+    document.getElementById('forward-results').classList.toggle('hidden', mode === 'reverse');
+    document.getElementById('reverse-results').classList.toggle('hidden', mode === 'forward');
+    calc();
+  }
+
+  /* ── localStorage ── */
+  function saveToStorage() {
+    const state = {
+      mode: MODE,
+      costo:      document.getElementById('costo').value,
+      descuento:  document.getElementById('descuento').value,
+      comision:   document.getElementById('comision').value,
+      ads:        document.getElementById('ads').value,
+      impuestos:  document.getElementById('impuestos').value,
+      errores:    document.getElementById('errores').value,
+      margen:     document.getElementById('margen').value,
+      'precio-real': document.getElementById('precio-real').value,
+    };
+    try { localStorage.setItem('pimenton-pricing-v1', JSON.stringify(state)); } catch(e) {}
+  }
+
+  function loadFromStorage() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('pimenton-pricing-v1'));
+      if (!saved) return;
+      ['costo','descuento','comision','ads','impuestos','errores','margen','precio-real']
+        .forEach(k => { if (saved[k] !== undefined) document.getElementById(k).value = saved[k]; });
+      if (saved.mode === 'reverse') setMode('reverse');
+    } catch(e) {}
+  }
+
+  /* ── Init ── */
   document.querySelectorAll('input').forEach(el => el.addEventListener('input', calc));
+  loadFromStorage();
   calc();
 </script>
 

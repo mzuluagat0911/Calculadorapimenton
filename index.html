@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Pricing — Pimentón</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111111;
+    --red: #E8341A;
+    --red-dim: rgba(232,52,26,0.15);
+    --red-border: rgba(232,52,26,0.35);
+    --white: #F5F0EB;
+    --muted: #888;
+    --card: #1A1A1A;
+    --border: #2A2A2A;
+    --green: #4CAF7D;
+    --yellow: #F5C842;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+  }
+
+  /* Header */
+  header {
+    width: 100%;
+    max-width: 640px;
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .logo-dot {
+    width: 12px; height: 12px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+
+  .logo-text {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--red);
+  }
+
+  h1 {
+    font-size: clamp(26px, 5vw, 38px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--white);
+  }
+
+  h1 span { color: var(--red); }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 4px;
+  }
+
+  /* Card */
+  .card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 16px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Input */
+  .input-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  .currency {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 14px 14px 36px;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    color: var(--white);
+    outline: none;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-color: var(--red);
+  }
+
+  /* Sliders */
+  .params-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    .params-grid { grid-template-columns: 1fr; }
+  }
+
+  .param-item {
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .param-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .param-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .param-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--white);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--red);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+  }
+
+  /* Results */
+  .result-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .result-block {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .result-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .result-value {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(28px, 6vw, 42px);
+    font-weight: 500;
+    color: var(--white);
+    line-height: 1;
+  }
+
+  .result-value.highlight {
+    color: var(--red);
+  }
+
+  .result-value.mult {
+    font-size: clamp(22px, 4vw, 32px);
+    color: var(--yellow);
+  }
+
+  /* Waterfall */
+  .waterfall {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .wf-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .wf-row:last-child { border-bottom: none; }
+
+  .wf-row:hover { background: rgba(255,255,255,0.03); }
+
+  .wf-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .wf-amount {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .wf-amount.deduction { color: #E8341A; }
+  .wf-amount.total { color: var(--white); font-size: 14px; }
+  .wf-amount.profit { color: var(--green); font-size: 14px; }
+
+  .wf-row.subtotal { background: rgba(255,255,255,0.03); }
+  .wf-row.final { background: rgba(76,175,125,0.08); }
+
+  .wf-name.bold { color: var(--white); font-weight: 700; }
+
+  /* Semáforo */
+  .semaforo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-top: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+
+  .semaforo.ok { background: rgba(76,175,125,0.12); border: 1px solid rgba(76,175,125,0.3); color: var(--green); }
+  .semaforo.warn { background: rgba(245,200,66,0.1); border: 1px solid rgba(245,200,66,0.3); color: var(--yellow); }
+  .semaforo.bad { background: rgba(232,52,26,0.1); border: 1px solid rgba(232,52,26,0.3); color: var(--red); }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.ok { background: var(--green); }
+  .dot.warn { background: var(--yellow); }
+  .dot.bad { background: var(--red); }
+
+  /* Footer */
+  footer {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #444;
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+  }
+
+  .tag {
+    display: inline-block;
+    background: var(--red-dim);
+    border: 1px solid var(--red-border);
+    color: var(--red);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <span class="logo-text">Pimentón</span>
+  </div>
+  <h1>Calculadora de<br><span>Pricing</span> Delivery</h1>
+  <div class="subtitle">// food delivery · pricing engine v1.0</div>
+</header>
+
+<!-- INPUT COSTO -->
+<div class="card">
+  <div class="section-label">Costo de mercadería (CMV)</div>
+  <div class="input-group">
+    <label>Costo del plato / combo</label>
+    <div class="input-wrap">
+      <span class="currency">$</span>
+      <input type="number" id="costo" value="6000" min="1" step="100">
+    </div>
+  </div>
+
+  <div class="section-label">Parámetros <span class="tag">editables</span></div>
+  <div class="params-grid">
+    <div class="param-item">
+      <div class="param-header">
+        <span class="param-name">Descuento</span>
+        <span class="param-val" id="desc-val">15%</span>
+      </div>
+      <input type="range" id="descuento" min="0" max="40" value="15" step="1">
+    </div>
+    <div class="param-item">
+      <div class="param-header">
+        <span class="param-name">Comisión app</span>
+        <span class="param-val" id="com-val">25%</span>
+      </div>
+      <input type="range" id="comision" min="10" max="40" value="25" step="1">
+    </div>
+    <div class="param-item">
+      <div class="param-header">
+        <span class="param-name">Ads</span>
+        <span class="param-val" id="ads-val">3%</span>
+      </div>
+      <input type="range" id="ads" min="0" max="15" value="3" step="1">
+    </div>
+    <div class="param-item">
+      <div class="param-header">
+        <span class="param-name">Impuestos</span>
+        <span class="param-val" id="imp-val">5%</span>
+      </div>
+      <input type="range" id="impuestos" min="0" max="15" value="5" step="1">
+    </div>
+    <div class="param-item">
+      <div class="param-header">
+        <span class="param-name">Errores</span>
+        <span class="param-val" id="err-val">2%</span>
+      </div>
+      <input type="range" id="errores" min="0" max="10" value="2" step="0.5">
+    </div>
+    <div class="param-item">
+      <div class="param-header">
+        <span class="param-name">Margen obj.</span>
+        <span class="param-val" id="mg-val">30%</span>
+      </div>
+      <input type="range" id="margen" min="10" max="50" value="30" step="1">
+    </div>
+  </div>
+</div>
+
+<!-- RESULTADOS -->
+<div class="card">
+  <div class="section-label">Resultado</div>
+
+  <div class="result-main">
+    <div class="result-block">
+      <div class="result-label">Precio lista ideal</div>
+      <div class="result-value highlight" id="precio-lista">$15.957</div>
+    </div>
+    <div class="result-block">
+      <div class="result-label">Multiplicador</div>
+      <div class="result-value mult" id="multiplicador">× 2.66</div>
+    </div>
+    <div class="result-block">
+      <div class="result-label">Precio sugerido</div>
+      <div class="result-value" id="precio-redondeado">$16.500</div>
+    </div>
+  </div>
+
+  <div class="section-label">Cascada P&L</div>
+  <div class="waterfall">
+    <div class="wf-row">
+      <span class="wf-name bold">Precio lista</span>
+      <span class="wf-amount total" id="wf-lista">$15.957</span>
+    </div>
+    <div class="wf-row">
+      <span class="wf-name">− Descuento (sobre lista)</span>
+      <span class="wf-amount deduction" id="wf-desc">−$2.394</span>
+    </div>
+    <div class="wf-row subtotal">
+      <span class="wf-name bold">Venta neta de descuento</span>
+      <span class="wf-amount total" id="wf-neta">$13.563</span>
+    </div>
+    <div class="wf-row">
+      <span class="wf-name">− Comisión app (sobre neta)</span>
+      <span class="wf-amount deduction" id="wf-com">−$3.391</span>
+    </div>
+    <div class="wf-row">
+      <span class="wf-name">− Ads (sobre lista)</span>
+      <span class="wf-amount deduction" id="wf-ads">−$479</span>
+    </div>
+    <div class="wf-row">
+      <span class="wf-name">− Impuestos (sobre lista)</span>
+      <span class="wf-amount deduction" id="wf-imp">−$798</span>
+    </div>
+    <div class="wf-row">
+      <span class="wf-name">− Errores (sobre lista)</span>
+      <span class="wf-amount deduction" id="wf-err">−$319</span>
+    </div>
+    <div class="wf-row subtotal">
+      <span class="wf-name bold">Lo que queda</span>
+      <span class="wf-amount total" id="wf-queda">$8.576</span>
+    </div>
+    <div class="wf-row">
+      <span class="wf-name">− Costo mercadería (CMV)</span>
+      <span class="wf-amount deduction" id="wf-cmv">−$6.000</span>
+    </div>
+    <div class="wf-row final">
+      <span class="wf-name bold">Ganancia</span>
+      <span class="wf-amount profit" id="wf-ganancia">$2.576 · 30%</span>
+    </div>
+  </div>
+
+  <div class="semaforo ok" id="semaforo">
+    <div class="dot ok" id="sem-dot"></div>
+    <span id="sem-text">✓ Precio correcto — margen objetivo alcanzado</span>
+  </div>
+</div>
+
+<footer>pimenton.io · pricing engine · solo para uso interno</footer>
+
+<script>
+  function fmt(n) {
+    return '$' + Math.round(n).toLocaleString('es-AR');
+  }
+
+  function roundUp(n) {
+    if (n < 1000) return Math.ceil(n / 50) * 50;
+    if (n < 10000) return Math.ceil(n / 500) * 500;
+    return Math.ceil(n / 1000) * 1000;
+  }
+
+  function calc() {
+    const costo = parseFloat(document.getElementById('costo').value) || 0;
+    const descPct = parseFloat(document.getElementById('descuento').value) / 100;
+    const comPct = parseFloat(document.getElementById('comision').value) / 100;
+    const adsPct = parseFloat(document.getElementById('ads').value) / 100;
+    const impPct = parseFloat(document.getElementById('impuestos').value) / 100;
+    const errPct = parseFloat(document.getElementById('errores').value) / 100;
+    const margenObj = parseFloat(document.getElementById('margen').value) / 100;
+
+    document.getElementById('desc-val').textContent = Math.round(descPct * 100) + '%';
+    document.getElementById('com-val').textContent = Math.round(comPct * 100) + '%';
+    document.getElementById('ads-val').textContent = Math.round(adsPct * 100) + '%';
+    document.getElementById('imp-val').textContent = Math.round(impPct * 100) + '%';
+    document.getElementById('err-val').textContent = parseFloat(document.getElementById('errores').value) + '%';
+    document.getElementById('mg-val').textContent = Math.round(margenObj * 100) + '%';
+
+    const ventaNeta = 1 - descPct;
+    const comision = ventaNeta * comPct;
+    const otrosCargas = adsPct + impPct + errPct;
+    const quedaPct = 1 - descPct - comision - otrosCargas;
+
+    const PL = costo / (quedaPct * (1 - margenObj));
+    const mult = PL / costo;
+
+    const descMonto = PL * descPct;
+    const netaDesc = PL - descMonto;
+    const comMonto = netaDesc * comPct;
+    const adsMonto = PL * adsPct;
+    const impMonto = PL * impPct;
+    const errMonto = PL * errPct;
+    const queda = PL - descMonto - comMonto - adsMonto - impMonto - errMonto;
+    const ganancia = queda - costo;
+    const ganPct = (ganancia / queda * 100).toFixed(1);
+
+    document.getElementById('precio-lista').textContent = fmt(PL);
+    document.getElementById('multiplicador').textContent = '× ' + mult.toFixed(2);
+    document.getElementById('precio-redondeado').textContent = fmt(roundUp(PL));
+
+    document.getElementById('wf-lista').textContent = fmt(PL);
+    document.getElementById('wf-desc').textContent = '−' + fmt(descMonto);
+    document.getElementById('wf-neta').textContent = fmt(netaDesc);
+    document.getElementById('wf-com').textContent = '−' + fmt(comMonto);
+    document.getElementById('wf-ads').textContent = '−' + fmt(adsMonto);
+    document.getElementById('wf-imp').textContent = '−' + fmt(impMonto);
+    document.getElementById('wf-err').textContent = '−' + fmt(errMonto);
+    document.getElementById('wf-queda').textContent = fmt(queda);
+    document.getElementById('wf-cmv').textContent = '−' + fmt(costo);
+    document.getElementById('wf-ganancia').textContent = fmt(ganancia) + ' · ' + ganPct + '%';
+
+    const sem = document.getElementById('semaforo');
+    const dot = document.getElementById('sem-dot');
+    const txt = document.getElementById('sem-text');
+
+    sem.className = 'semaforo ok';
+    dot.className = 'dot ok';
+    txt.textContent = `✓ Precio correcto — ${ganPct}% de margen sobre venta neta`;
+
+    if (quedaPct <= 0) {
+      sem.className = 'semaforo bad';
+      dot.className = 'dot bad';
+      txt.textContent = '✗ Imposible — las cargas superan el 100% del precio';
+    } else if (mult < 2.5) {
+      sem.className = 'semaforo bad';
+      dot.className = 'dot bad';
+      txt.textContent = `⚠ Multiplicador muy bajo (×${mult.toFixed(2)}) — no alcanzás el margen objetivo`;
+    }
+  }
+
+  document.querySelectorAll('input').forEach(el => el.addEventListener('input', calc));
+  calc();
+</script>
+
+</body>
+</html>

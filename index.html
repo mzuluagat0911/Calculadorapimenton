@@ -703,12 +703,14 @@
     let PL;
 
     if (MODE === 'forward') {
-      // Calculate PL from costo + target margin
-      if (quedaPct <= 0) {
-        setSemaforo('bad', '✗ Imposible — las cargas superan el 100% del precio');
+      // Calculate PL from costo + target margin over net sales (venta neta)
+      const netaPct = 1 - descPct;
+      const targetDen = quedaPct - (margenObj * netaPct);
+      if (targetDen <= 0) {
+        setSemaforo('bad', '✗ Imposible — con estos parámetros no se puede lograr ese margen sobre venta neta');
         return;
       }
-      PL = costo / (quedaPct * (1 - margenObj));
+      PL = costo / targetDen;
     } else {
       // Reverse: use the entered price
       const precioValid = validateInput('precio-real', 'precio-real-error');
@@ -725,7 +727,7 @@
     const errMonto   = PL * errPct;
     const queda      = PL - descMonto - comMonto - adsMonto - impMonto - errMonto;
     const ganancia   = queda - costo;
-    const ganPct     = queda > 0 ? (ganancia / queda * 100) : 0;
+    const ganPct     = netaDesc > 0 ? (ganancia / netaDesc * 100) : 0;
 
     // Mode-specific results display
     if (MODE === 'forward') {

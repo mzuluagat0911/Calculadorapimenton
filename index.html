@@ -424,14 +424,191 @@
   }
 
   .hidden { display: none !important; }
+
+  /* Auth */
+  .auth-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  .auth-overlay.hidden { display: none !important; }
+
+  .auth-card {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .auth-card h2 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    color: var(--white);
+  }
+
+  .auth-card .auth-hint {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .auth-text,
+  .auth-password {
+    width: 100%;
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: 'Syne', sans-serif;
+    color: var(--white);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .auth-text:focus,
+  .auth-password:focus {
+    border-color: var(--red);
+  }
+
+  .auth-submit {
+    width: 100%;
+    margin-top: 8px;
+    padding: 14px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .auth-submit:hover { opacity: 0.92; }
+  .auth-submit:active { transform: scale(0.99); }
+  .auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .auth-msg {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    margin-top: 14px;
+    min-height: 1.2em;
+    color: var(--yellow);
+  }
+
+  .auth-msg.error { color: var(--red); }
+  .auth-msg.ok { color: var(--green); }
+
+  .auth-field-hint {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  .header-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .user-bar {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-align: right;
+    max-width: 260px;
+    line-height: 1.5;
+  }
+
+  .user-bar strong { color: var(--white); display: block; }
+
+  .btn-text {
+    background: none;
+    border: none;
+    color: var(--red);
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 6px 0 0;
+    margin-top: 4px;
+  }
+
+  .btn-text:hover { text-decoration: underline; }
+
+  #app-shell.hidden { display: none !important; }
 </style>
 </head>
 <body>
 
+<div id="auth-overlay" class="auth-overlay">
+  <div class="card auth-card">
+    <h2>Entrar</h2>
+    <p class="auth-hint" id="auth-mode-hint">Completá los datos la primera vez. Después solo necesitás tu correo.</p>
+
+    <form id="form-auth">
+      <div id="auth-block-profile">
+        <div class="input-group">
+          <label>Nombre</label>
+          <input class="auth-text" name="first_name" autocomplete="given_name" placeholder="Nombre">
+        </div>
+        <div class="input-group">
+          <label>Apellido</label>
+          <input class="auth-text" name="last_name" autocomplete="family_name" placeholder="Apellido">
+        </div>
+        <div class="input-group">
+          <label>Celular (con código de país)</label>
+          <input class="auth-text" name="phone" autocomplete="tel" inputmode="tel" placeholder="+57 300 1234567">
+          <p class="auth-field-hint">Incluí el indicativo, ej. <strong>+57</strong>, <strong>+54</strong>, <strong>+52</strong>.</p>
+        </div>
+        <div class="input-group">
+          <label>Nombre del restaurante</label>
+          <input class="auth-text" name="restaurant_name" autocomplete="organization" placeholder="Tu marca / local">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Correo</label>
+        <input class="auth-text" type="email" name="email" autocomplete="email" required placeholder="nombre@restaurante.com">
+      </div>
+      <button type="submit" class="auth-submit" id="btn-auth">Entrar</button>
+    </form>
+    <button type="button" class="btn-text" id="btn-first-time" style="display: none; margin-top: 12px;">Primera vez en este equipo — completar mis datos</button>
+
+    <p id="auth-msg" class="auth-msg" aria-live="polite"></p>
+  </div>
+</div>
+
+<div id="app-shell" class="hidden">
 <header>
-  <div class="logo">
-    <div class="logo-dot"></div>
-    <span class="logo-text">Pimentón</span>
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span class="logo-text">Pimentón</span>
+    </div>
+    <div id="user-bar" class="user-bar">
+      <strong id="user-greeting">—</strong>
+      <span id="user-restaurant"></span>
+      <button type="button" class="btn-text" id="btn-logout">Cerrar sesión</button>
+    </div>
   </div>
   <h1>Calculadora de<br><span>Pricing</span> Delivery</h1>
   <div class="subtitle">// food delivery · pricing engine v1.1</div>
@@ -471,7 +648,7 @@
         <span class="param-name">Descuento</span>
         <span class="param-val" id="desc-val">15%</span>
       </div>
-      <input type="range" id="descuento" min="0" max="40" value="15" step="1" data-good-high="false">
+      <input type="range" id="descuento" min="0" max="70" value="15" step="1" data-good-high="false">
     </div>
     <div class="param-item">
       <div class="param-header">
@@ -506,7 +683,7 @@
         <span class="param-name">Margen obj.</span>
         <span class="param-val" id="mg-val">30%</span>
       </div>
-      <input type="range" id="margen" min="10" max="50" value="30" step="1" data-good-high="true">
+      <input type="range" id="margen" min="0" max="50" value="30" step="1" data-good-high="true">
     </div>
   </div>
 </div>
@@ -605,8 +782,232 @@
 </div>
 
 <footer>pimenton.io · pricing engine · v1.1</footer>
+</div>
 
+<script src="supabase-config.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+  window.__supabaseCreateClient = createClient;
+  window.dispatchEvent(new Event('supabase-sdk-ready'));
+</script>
 <script>
+  function getCreateClient() {
+    return window.__supabaseCreateClient;
+  }
+
+  function pimentonApiUrl(path) {
+    const seg = path.startsWith('/') ? path : '/' + path;
+    const cfg = window.PIMENTON_CONFIG || {};
+    const root = String(cfg.apiRoot || '').replace(/\/$/, '');
+    return root ? root + seg : seg;
+  }
+
+  function emailsMatch(a, b) {
+    if (!a || !b) return false;
+    return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+  }
+
+  let sb = null;
+  let calculatorBooted = false;
+
+  function authShowMsg(text, kind) {
+    const el = document.getElementById('auth-msg');
+    el.textContent = text || '';
+    el.className = 'auth-msg' + (kind ? ' ' + kind : '');
+  }
+
+  function showApp(show) {
+    document.getElementById('auth-overlay').classList.toggle('hidden', show);
+    document.getElementById('app-shell').classList.toggle('hidden', !show);
+  }
+
+  async function refreshUserBar() {
+    const { data: row, error } = await sb.from('profiles').select('first_name,last_name,restaurant_name').maybeSingle();
+    if (error || !row) {
+      document.getElementById('user-greeting').textContent = 'Hola';
+      document.getElementById('user-restaurant').textContent = '';
+      return;
+    }
+    document.getElementById('user-greeting').textContent = 'Hola, ' + row.first_name;
+    document.getElementById('user-restaurant').textContent = row.restaurant_name ? ' · ' + row.restaurant_name : '';
+  }
+
+  function bootCalculatorOnce() {
+    if (calculatorBooted) return;
+    calculatorBooted = true;
+    document.querySelectorAll('#app-shell input').forEach(el => el.addEventListener('input', calc));
+    loadFromStorage();
+    calc();
+  }
+
+  async function onSession(active) {
+    if (active) {
+      showApp(true);
+      await refreshUserBar();
+      bootCalculatorOnce();
+    } else {
+      showApp(false);
+      authShowMsg('', '');
+    }
+  }
+
+  function initAuth() {
+    const cfg = window.PIMENTON_CONFIG;
+    if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+      authShowMsg('Configurá supabaseUrl y supabaseAnonKey en supabase-config.js', 'error');
+      return;
+    }
+
+    const createClient = getCreateClient();
+    if (!createClient) {
+      window.addEventListener('supabase-sdk-ready', initAuth, { once: true });
+      return;
+    }
+
+    if (window.__pimentonAuthReady) return;
+    window.__pimentonAuthReady = true;
+
+    sb = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+      auth: { persistSession: true },
+    });
+
+    function applyAuthMode() {
+      const profile = document.getElementById('auth-block-profile');
+      const hint = document.getElementById('auth-mode-hint');
+      const btnFt = document.getElementById('btn-first-time');
+      const quick = localStorage.getItem('pimenton_data_captured') === '1';
+      profile.classList.toggle('hidden', quick);
+      btnFt.style.display = quick ? 'block' : 'none';
+      hint.textContent = quick
+        ? 'Ingresá el mismo correo que usaste para cargar tus datos.'
+        : 'Completá tus datos: los guardamos para el equipo. La próxima vez en este equipo solo pediremos el correo.';
+      ['first_name', 'last_name', 'phone', 'restaurant_name'].forEach((name) => {
+        const inp = profile.querySelector(`[name="${name}"]`);
+        if (!inp) return;
+        if (quick) {
+          inp.disabled = true;
+          inp.removeAttribute('required');
+          inp.value = '';
+        } else {
+          inp.disabled = false;
+          inp.setAttribute('required', '');
+        }
+      });
+    }
+
+    applyAuthMode();
+
+    document.getElementById('btn-first-time').addEventListener('click', () => {
+      localStorage.removeItem('pimenton_data_captured');
+      applyAuthMode();
+      authShowMsg('', '');
+    });
+
+    document.getElementById('form-auth').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const btn = document.getElementById('btn-auth');
+      btn.disabled = true;
+      authShowMsg('Entrando…', 'ok');
+      try {
+        const fd = new FormData(form);
+        const email = (fd.get('email') || '').toString().trim();
+        if (!email.includes('@')) {
+          authShowMsg('Usá un correo válido.', 'error');
+          btn.disabled = false;
+          return;
+        }
+
+        const quick = localStorage.getItem('pimenton_data_captured') === '1';
+
+        if (!quick) {
+          const payloadObj = {
+            first_name: (fd.get('first_name') || '').toString().trim(),
+            last_name: (fd.get('last_name') || '').toString().trim(),
+            phone: (fd.get('phone') || '').toString().trim(),
+            email,
+            restaurant_name: (fd.get('restaurant_name') || '').toString().trim(),
+          };
+          const r = await fetch(pimentonApiUrl('/api/register'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payloadObj),
+          });
+          const rawText = await r.text();
+          let payload = {};
+          try {
+            payload = rawText ? JSON.parse(rawText) : {};
+          } catch {
+            throw new Error('El servidor no devolvió JSON. ¿Está desplegada la carpeta /api en Vercel? ' + rawText.slice(0, 120));
+          }
+          if (!r.ok) {
+            throw new Error(
+              payload.error || `Error ${r.status}: ${rawText.slice(0, 200)}`
+            );
+          }
+          const { error: sessErr } = await sb.auth.setSession({
+            access_token: payload.access_token,
+            refresh_token: payload.refresh_token,
+          });
+          if (sessErr) throw sessErr;
+          localStorage.setItem('pimenton_data_captured', '1');
+          applyAuthMode();
+          authShowMsg('', '');
+          form.reset();
+          btn.disabled = false;
+          return;
+        }
+
+        let emailForCheck = email;
+        const { data: { session: existing } } = await sb.auth.getSession();
+        if (existing?.user?.email && emailsMatch(existing.user.email, emailForCheck)) {
+          authShowMsg('Listo.', 'ok');
+          await onSession(true);
+          btn.disabled = false;
+          return;
+        }
+        if (existing?.user?.email) {
+          await sb.auth.signOut();
+        }
+
+        const r = await fetch(pimentonApiUrl('/api/instant-login'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: email }),
+        });
+        const payload = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          throw new Error(
+            payload.error ||
+              'No encontramos ese correo. Tocá «Primera vez en este equipo» y completá tus datos.'
+          );
+        }
+        const { error: sessErr } = await sb.auth.setSession({
+          access_token: payload.access_token,
+          refresh_token: payload.refresh_token,
+        });
+        if (sessErr) throw sessErr;
+        authShowMsg('', '');
+      } catch (err) {
+        authShowMsg(err.message || 'Error al entrar', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      await sb.auth.signOut();
+    });
+
+    sb.auth.onAuthStateChange((_event, session) => {
+      onSession(!!session);
+    });
+
+    sb.auth.getSession().then(({ data: { session } }) => onSession(!!session));
+  }
+
+  initAuth();
+
   let MODE = 'forward';
 
   /* ── Slider fill + thumb color ── */
@@ -822,10 +1223,9 @@
     } catch(e) {}
   }
 
-  /* ── Init ── */
-  document.querySelectorAll('input').forEach(el => el.addEventListener('input', calc));
-  loadFromStorage();
-  calc();
+  window.setMode = setMode;
+
+  /* ── Init calculadora: se enlaza en onSession() vía bootCalculatorOnce() ── */
 </script>
 
 </body>

@@ -425,6 +425,89 @@
 
   .hidden { display: none !important; }
 
+  /* Campaign toggle (header-level) */
+  .campaign-toggle {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    gap: 6px;
+    margin-bottom: 28px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 5px;
+  }
+
+  .campaign-btn {
+    flex: 1;
+    padding: 12px 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .campaign-btn .pulse {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.6;
+  }
+
+  .campaign-btn.active {
+    background: var(--red);
+    color: var(--white);
+  }
+
+  .campaign-btn.active .pulse {
+    background: var(--white);
+    opacity: 1;
+    animation: pulse 2s infinite;
+  }
+
+  .campaign-btn:not(.active):hover {
+    color: var(--white);
+    background: rgba(255,255,255,0.04);
+  }
+
+  /* Cupón Mundial buttons */
+  .coupon-grp {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .coupon-btn {
+    padding: 12px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #111;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--white);
+    transition: all 0.15s;
+  }
+
+  .coupon-btn:hover { border-color: var(--red); }
+  .coupon-btn.active {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--white);
+  }
+
   /* Auth */
   .auth-overlay {
     position: fixed;
@@ -610,9 +693,14 @@
       <button type="button" class="btn-text" id="btn-logout">Cerrar sesión</button>
     </div>
   </div>
-  <h1>Calculadora de<br><span>Pricing</span> Delivery</h1>
-  <div class="subtitle">// food delivery · pricing engine v1.1</div>
+  <h1 id="app-title">Calculadora de<br><span>Pricing</span> Delivery</h1>
+  <div class="subtitle" id="app-subtitle">// food delivery · pricing engine v1.1</div>
 </header>
+
+<div class="campaign-toggle" role="tablist" aria-label="Modo de campaña">
+  <button type="button" class="campaign-btn active" id="btn-campaign-regular" onclick="setCampaign('regular')" role="tab" aria-selected="true">Pricing Delivery</button>
+  <button type="button" class="campaign-btn" id="btn-campaign-mundial" onclick="setCampaign('mundial')" role="tab" aria-selected="false"><span class="pulse"></span>Promoción Mundial</button>
+</div>
 
 <!-- INPUTS -->
 <div class="card">
@@ -643,12 +731,23 @@
 
   <div class="section-label">Parámetros <span class="tag">editables</span></div>
   <div class="params-grid">
-    <div class="param-item">
+    <div class="param-item" id="descuento-item">
       <div class="param-header">
         <span class="param-name">Descuento</span>
         <span class="param-val" id="desc-val">15%</span>
       </div>
       <input type="range" id="descuento" min="0" max="70" value="15" step="1" data-good-high="false">
+    </div>
+    <div class="param-item hidden" id="cupon-item" style="grid-column: 1 / -1;">
+      <div class="param-header">
+        <span class="param-name">Cupón Mundial · valor fijo</span>
+        <span class="param-val" id="cupon-val">$8.000</span>
+      </div>
+      <div class="coupon-grp" id="coupon-grp">
+        <button type="button" class="coupon-btn" data-val="7000">$7.000</button>
+        <button type="button" class="coupon-btn active" data-val="8000">$8.000</button>
+        <button type="button" class="coupon-btn" data-val="9000">$9.000</button>
+      </div>
     </div>
     <div class="param-item">
       <div class="param-header">
@@ -734,7 +833,7 @@
 
     <div class="wf-group-header">Plataforma</div>
     <div class="wf-row">
-      <span class="wf-name">− Descuento (sobre lista)</span>
+      <span class="wf-name" id="wf-desc-label">− Descuento (sobre lista)</span>
       <span class="wf-amount deduction" id="wf-desc">−$2.394</span>
     </div>
     <div class="wf-row subtotal">
@@ -836,6 +935,18 @@
     if (calculatorBooted) return;
     calculatorBooted = true;
     document.querySelectorAll('#app-shell input').forEach(el => el.addEventListener('input', calc));
+
+    // Cupón Mundial — botones de valor fijo
+    document.querySelectorAll('#coupon-grp .coupon-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('#coupon-grp .coupon-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        CUPON = parseFloat(b.dataset.val) || 0;
+        document.getElementById('cupon-val').textContent = '$' + CUPON.toLocaleString('es-AR');
+        calc();
+      });
+    });
+
     loadFromStorage();
     calc();
   }
@@ -1009,6 +1120,8 @@
   initAuth();
 
   let MODE = 'forward';
+  let CAMPAIGN = 'regular'; // 'regular' | 'mundial'
+  let CUPON = 8000;          // valor fijo del cupón mundial cuando CAMPAIGN === 'mundial'
 
   /* ── Slider fill + thumb color ── */
   function updateSliderStyle(el) {
@@ -1094,24 +1207,35 @@
     // Update slider styles
     document.querySelectorAll('input[type="range"]').forEach(updateSliderStyle);
 
-    // Shared math
-    const ventaNeta  = 1 - descPct;
-    const comision   = ventaNeta * comPct;
-    const quedaPct   = 1 - descPct - comision - adsPct - impPct - errPct;
-
     if (!costoValid || costo <= 0) return;
 
     let PL;
 
     if (MODE === 'forward') {
-      // Calculate PL from costo + target margin over net sales (venta neta)
-      const netaPct = 1 - descPct;
-      const targetDen = quedaPct - (margenObj * netaPct);
-      if (targetDen <= 0) {
-        setSemaforo('bad', '✗ Imposible — con estos parámetros no se puede lograr ese margen sobre venta neta');
-        return;
+      if (CAMPAIGN === 'mundial') {
+        // Cupón fijo: queda - costo = margenObj * (PL - cupon)
+        // queda = PL*(1 - comPct - adsPct - impPct - errPct) - cupon*(1 - comPct)
+        // ⇒ PL = (costo + cupon*(1 - comPct - margenObj)) / ((1 - comPct - adsPct - impPct - errPct) - margenObj)
+        const A = (1 - comPct - adsPct - impPct - errPct) - margenObj;
+        const B = costo + CUPON * (1 - comPct - margenObj);
+        if (A <= 0) {
+          setSemaforo('bad', '✗ Imposible — con estos parámetros no se puede lograr ese margen sobre venta neta');
+          return;
+        }
+        PL = B / A;
+      } else {
+        // Descuento %: PL desde costo + margen objetivo sobre venta neta
+        const ventaNeta = 1 - descPct;
+        const comision  = ventaNeta * comPct;
+        const quedaPct  = 1 - descPct - comision - adsPct - impPct - errPct;
+        const netaPct   = 1 - descPct;
+        const targetDen = quedaPct - (margenObj * netaPct);
+        if (targetDen <= 0) {
+          setSemaforo('bad', '✗ Imposible — con estos parámetros no se puede lograr ese margen sobre venta neta');
+          return;
+        }
+        PL = costo / targetDen;
       }
-      PL = costo / targetDen;
     } else {
       // Reverse: use the entered price
       const precioValid = validateInput('precio-real', 'precio-real-error');
@@ -1119,8 +1243,8 @@
       PL = parseFloat(document.getElementById('precio-real').value) || 0;
     }
 
-    const mult       = PL / costo;
-    const descMonto  = PL * descPct;
+    const mult       = costo > 0 ? PL / costo : 0;
+    const descMonto  = CAMPAIGN === 'mundial' ? Math.min(CUPON, PL) : PL * descPct;
     const netaDesc   = PL - descMonto;
     const comMonto   = netaDesc * comPct;
     const adsMonto   = PL * adsPct;
@@ -1162,8 +1286,10 @@
     document.getElementById('wf-ganancia').textContent = fmt(ganancia) + ' · ' + ganPct.toFixed(1) + '%';
 
     // Semáforo
-    if (quedaPct <= 0) {
-      setSemaforo('bad', '✗ Imposible — las cargas superan el 100% del precio');
+    if (queda <= 0) {
+      setSemaforo('bad', CAMPAIGN === 'mundial'
+        ? '✗ El cupón se come todo — bajá el cupón o subí el precio'
+        : '✗ Imposible — las cargas superan el 100% del precio');
     } else if (MODE === 'forward') {
       if (mult < 2.5) {
         setSemaforo('bad',  `✗ Multiplicador muy bajo (×${mult.toFixed(2)}) — revisá los parámetros`);
@@ -1197,10 +1323,39 @@
     calc();
   }
 
+  /* ── Campaign switch (Pricing Delivery / Promoción Mundial) ── */
+  function setCampaign(camp) {
+    CAMPAIGN = camp;
+    const isMundial = camp === 'mundial';
+
+    document.getElementById('btn-campaign-regular').classList.toggle('active', !isMundial);
+    document.getElementById('btn-campaign-regular').setAttribute('aria-selected', String(!isMundial));
+    document.getElementById('btn-campaign-mundial').classList.toggle('active', isMundial);
+    document.getElementById('btn-campaign-mundial').setAttribute('aria-selected', String(isMundial));
+
+    // Swap descuento slider ↔ cupón fijo
+    document.getElementById('descuento-item').classList.toggle('hidden', isMundial);
+    document.getElementById('cupon-item').classList.toggle('hidden', !isMundial);
+
+    // Etiqueta de la cascada
+    document.getElementById('wf-desc-label').textContent = isMundial
+      ? '− Cupón Mundial (valor fijo)'
+      : '− Descuento (sobre lista)';
+
+    // Subtítulo del header
+    document.getElementById('app-subtitle').textContent = isMundial
+      ? '// promoción mundial · cupón fijo · v1.1'
+      : '// food delivery · pricing engine v1.1';
+
+    calc();
+  }
+
   /* ── localStorage ── */
   function saveToStorage() {
     const state = {
       mode: MODE,
+      campaign: CAMPAIGN,
+      cupon: CUPON,
       costo:      document.getElementById('costo').value,
       descuento:  document.getElementById('descuento').value,
       comision:   document.getElementById('comision').value,
@@ -1219,11 +1374,24 @@
       if (!saved) return;
       ['costo','descuento','comision','ads','impuestos','errores','margen','precio-real']
         .forEach(k => { if (saved[k] !== undefined) document.getElementById(k).value = saved[k]; });
+
+      if (saved.cupon !== undefined) {
+        const v = parseFloat(saved.cupon);
+        if (!isNaN(v) && v > 0) {
+          CUPON = v;
+          document.querySelectorAll('#coupon-grp .coupon-btn').forEach(b => {
+            b.classList.toggle('active', parseFloat(b.dataset.val) === v);
+          });
+          document.getElementById('cupon-val').textContent = '$' + CUPON.toLocaleString('es-AR');
+        }
+      }
+      if (saved.campaign === 'mundial') setCampaign('mundial');
       if (saved.mode === 'reverse') setMode('reverse');
     } catch(e) {}
   }
 
   window.setMode = setMode;
+  window.setCampaign = setCampaign;
 
   /* ── Init calculadora: se enlaza en onSession() vía bootCalculatorOnce() ── */
 </script>

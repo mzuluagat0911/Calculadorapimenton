@@ -1065,13 +1065,32 @@
     calc();
   }
 
-  /** Si venís de admin sin sesión compartida, ?pimenton_next=admin → tras login te manda al panel. */
-  function consumePimentonNextAfterLogin() {
+  /** Tras login con ?pimenton_next=admin: guarda tokens en sessionStorage y abre admin (misma pestaña). */
+  async function consumePimentonNextAfterLogin() {
     try {
       var u = new URL(window.location.href);
       var next = (u.searchParams.get('pimenton_next') || '').trim();
-      if (!next) return false;
-      if (next !== 'admin' && next !== 'admin.html') return false;
+      if (!next || (next !== 'admin' && next !== 'admin.html')) return false;
+
+      var session = null;
+      for (var i = 0; i < 60; i++) {
+        var res = await sb.auth.getSession();
+        session = res.data.session;
+        if (session && session.access_token && session.refresh_token) break;
+        await new Promise(function (r) { setTimeout(r, 50); });
+      }
+      if (!session || !session.access_token || !session.refresh_token) return false;
+
+      try {
+        sessionStorage.setItem(
+          'pimenton_sb_handoff',
+          JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          })
+        );
+      } catch (e) {}
+
       u.searchParams.delete('pimenton_next');
       var qs = u.searchParams.toString();
       window.history.replaceState({}, '', u.pathname + (qs ? '?' + qs : '') + u.hash);
@@ -1083,14 +1102,18 @@
   }
 
   async function onSession(active) {
-    if (active) {
-      if (consumePimentonNextAfterLogin()) return;
-      showApp(true);
-      await refreshUserBar();
-      bootCalculatorOnce();
-    } else {
-      showApp(false);
-      authShowMsg('', '');
+    try {
+      if (active) {
+        if (await consumePimentonNextAfterLogin()) return;
+        showApp(true);
+        await refreshUserBar();
+        bootCalculatorOnce();
+      } else {
+        showApp(false);
+        authShowMsg('', '');
+      }
+    } catch (e) {
+      console.error('onSession', e);
     }
   }
 
@@ -1198,6 +1221,7 @@
           authShowMsg('', '');
           form.reset();
           btn.disabled = false;
+          await onSession(true);
           return;
         }
 
@@ -1231,6 +1255,7 @@
         });
         if (sessErr) throw sessErr;
         authShowMsg('', '');
+        await onSession(true);
       } catch (err) {
         authShowMsg(err.message || 'Error al entrar', 'error');
       } finally {
@@ -1243,10 +1268,10 @@
     });
 
     sb.auth.onAuthStateChange((_event, session) => {
-      onSession(!!session);
+      void onSession(!!session);
     });
 
-    sb.auth.getSession().then(({ data: { session } }) => onSession(!!session));
+    sb.auth.getSession().then(({ data: { session } }) => void onSession(!!session));
   }
 
   initAuth();
@@ -1560,7 +1585,7 @@
       err.textContent = 'Correo no autorizado.';
       return;
     }
-    window.location.href = 'admin.html';
+    window.location.href = './index.html?pimenton_next=admin';
   }
 
   if (btn) btn.addEventListener('click', function (ev) {

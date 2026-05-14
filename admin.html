@@ -79,8 +79,22 @@
   let sb = null;
   let lastRows = [];
 
-  /** getSession() a veces devuelve null hasta que el cliente lee localStorage; refreshSession rearma con refresh_token. */
+  /** Lee handoff desde index (?pimenton_next=admin) y luego localStorage de Supabase. */
   async function resolveSession(client) {
+    try {
+      var raw = sessionStorage.getItem('pimenton_sb_handoff');
+      if (raw) {
+        var h = JSON.parse(raw);
+        sessionStorage.removeItem('pimenton_sb_handoff');
+        if (h && h.access_token && h.refresh_token) {
+          await client.auth.setSession({
+            access_token: h.access_token,
+            refresh_token: h.refresh_token,
+          });
+        }
+      }
+    } catch (e) {}
+
     for (let i = 0; i < 30; i++) {
       const { data: { session } } = await client.auth.getSession();
       if (session && session.access_token) return session;

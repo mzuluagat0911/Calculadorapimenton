@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — registros Pimentón</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #111; --card: #1a1a1a; --border: #2a2a2a; --red: #E8341A; --white: #F5F0EB; --muted: #888; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Syne, sans-serif; background: var(--bg); color: var(--white); min-height: 100vh; padding: 24px 16px 48px; }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  h1 span { color: var(--red); }
+  .sub { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+  a { color: var(--red); text-decoration: none; font-size: 13px; font-weight: 700; }
+  a:hover { text-decoration: underline; }
+  button {
+    font-family: Syne, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; background: var(--red); color: var(--white);
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: #333; color: var(--white); }
+  .msg { font-family: 'DM Mono', monospace; font-size: 13px; margin-top: 12px; min-height: 1.4em; }
+  .msg.err { color: var(--red); }
+  .msg.ok { color: #4CAF7D; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; vertical-align: top; }
+  th { font-family: Syne, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+  .empty { color: var(--muted); padding: 24px; text-align: center; font-family: 'DM Mono', monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Panel <span>admin</span></h1>
+  <p class="sub">Registros desde Supabase (misma sesión que la calculadora)</p>
+  <div class="bar">
+    <a href="index.html">← Volver a la calculadora</a>
+    <button type="button" id="btn-refresh">Actualizar</button>
+    <button type="button" id="btn-csv" class="secondary" disabled>Descargar CSV</button>
+  </div>
+  <p id="msg" class="msg" aria-live="polite"></p>
+  <div class="card" style="margin-top: 16px;">
+    <div id="table-wrap"></div>
+  </div>
+</div>
+
+<script src="supabase-config.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+  window.__supabaseCreateClient = createClient;
+  window.dispatchEvent(new Event('supabase-sdk-ready'));
+</script>
+<script>
+  function pimentonApiUrl(path) {
+    const seg = path.startsWith('/') ? path : '/' + path;
+    const cfg = window.PIMENTON_CONFIG || {};
+    const root = String(cfg.apiRoot || '').replace(/\/$/, '');
+    return root ? root + seg : seg;
+  }
+
+  function csvEscape(v) {
+    const t = String(v ?? '');
+    if (/[",\n\r]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
+    return t;
+  }
+
+  function profilesToCsv(rows) {
+    const cols = ['email', 'first_name', 'last_name', 'phone', 'phone_normalized', 'restaurant_name', 'created_at', 'id'];
+    const header = cols.join(',');
+    const lines = rows.map((r) => cols.map((c) => csvEscape(r[c])).join(','));
+    return [header, ...lines].join('\n');
+  }
+
+  let sb = null;
+  let lastRows = [];
+
+  function setMsg(text, kind) {
+    const el = document.getElementById('msg');
+    el.textContent = text || '';
+    el.className = 'msg' + (kind === 'err' ? ' err' : kind === 'ok' ? ' ok' : '');
+  }
+
+  function renderTable(rows) {
+    const wrap = document.getElementById('table-wrap');
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="empty">No hay registros.</div>';
+      return;
+    }
+    const th = ['Correo', 'Nombre', 'Apellido', 'Celular', 'Cel. normalizado', 'Restaurante', 'Alta', 'ID'];
+    const keys = ['email', 'first_name', 'last_name', 'phone', 'phone_normalized', 'restaurant_name', 'created_at', 'id'];
+    let html = '<table><thead><tr>';
+    th.forEach((h) => { html += '<th>' + h + '</th>'; });
+    html += '</tr></thead><tbody>';
+    rows.forEach((r) => {
+      html += '<tr>';
+      keys.forEach((k) => { html += '<td>' + String(r[k] ?? '').replace(/</g, '&lt;') + '</td>'; });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  async function loadData() {
+    document.getElementById('btn-refresh').disabled = true;
+    document.getElementById('btn-csv').disabled = true;
+    setMsg('Cargando…', '');
+    lastRows = [];
+
+    const cfg = window.PIMENTON_CONFIG;
+    if (!cfg?.supabaseUrl || !cfg?.supabaseAnonKey) {
+      setMsg('Falta supabase-config.js', 'err');
+      document.getElementById('btn-refresh').disabled = false;
+      return;
+    }
+
+    const createClient = window.__supabaseCreateClient;
+    if (!createClient) {
+      window.addEventListener('supabase-sdk-ready', loadData, { once: true });
+      document.getElementById('btn-refresh').disabled = false;
+      return;
+    }
+
+    if (!sb) {
+      sb = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true } });
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) {
+      setMsg('No hay sesión. Entrá en la calculadora (index.html) con el correo admin y volvé acá.', 'err');
+      renderTable([]);
+      document.getElementById('btn-refresh').disabled = false;
+      return;
+    }
+
+    try {
+      const r = await fetch(pimentonApiUrl('/api/admin-profiles'), {
+        headers: { Authorization: 'Bearer ' + session.access_token },
+      });
+      const payload = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        throw new Error(payload.error || 'Error ' + r.status);
+      }
+      lastRows = payload.profiles || [];
+      renderTable(lastRows);
+      document.getElementById('btn-csv').disabled = lastRows.length === 0;
+      setMsg(lastRows.length + ' registro(s).', 'ok');
+    } catch (e) {
+      setMsg(e.message || 'Error', 'err');
+      renderTable([]);
+    } finally {
+      document.getElementById('btn-refresh').disabled = false;
+    }
+  }
+
+  document.getElementById('btn-refresh').addEventListener('click', loadData);
+  document.getElementById('btn-csv').addEventListener('click', () => {
+    if (!lastRows.length) return;
+    const csv = profilesToCsv(lastRows);
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'pimenton-registros-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  function boot() {
+    const createClient = window.__supabaseCreateClient;
+    if (!createClient) {
+      window.addEventListener('supabase-sdk-ready', boot, { once: true });
+      return;
+    }
+    loadData();
+  }
+  boot();
+</script>
+</body>
+</html>

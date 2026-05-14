@@ -1,6 +1,8 @@
 /**
  * BETA / captura de datos — sin seguridad real:
  * cualquiera que conozca un correo o celular registrado obtiene sesión.
+ * Los correos mateo@pimenton.io y juanchi@pimenton.io se crean en Auth+profiles
+ * la primera vez que alguien pide instant-login con ese correo (bootstrap superadmin).
  * Requiere en Vercel: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY
  */
 const { createClient } = require('@supabase/supabase-js');
@@ -44,6 +46,60 @@ async function findUserByEmail(supabase, email) {
   }
 }
 
+/** Misma lista que api/admin-profiles.js (DEFAULT_ADMIN_EMAILS). Celulares reservados, únicos en profiles. */
+const SUPERADMIN_BOOTSTRAP = [
+  {
+    email: 'mateo@pimenton.io',
+    first_name: 'Mateo',
+    last_name: 'Admin',
+    phone: '+000000000001',
+    restaurant_name: 'Pimentón',
+  },
+  {
+    email: 'juanchi@pimenton.io',
+    first_name: 'Juanchi',
+    last_name: 'Admin',
+    phone: '+000000000002',
+    restaurant_name: 'Pimentón',
+  },
+];
+
+function superadminBootstrapSpec(email) {
+  const e = String(email || '').trim().toLowerCase();
+  return SUPERADMIN_BOOTSTRAP.find((row) => row.email === e) || null;
+}
+
+/**
+ * Crea usuario + perfil (trigger) si el correo es superadmin y aún no existe.
+ */
+async function ensureSuperadminUserExists(supabase, email) {
+  const spec = superadminBootstrapSpec(email);
+  if (!spec) return;
+  const existing = await findUserByEmail(supabase, email);
+  if (existing) return;
+
+  const tempPass = `beta_${crypto.randomBytes(32).toString('base64url')}`;
+  const meta = {
+    first_name: spec.first_name,
+    last_name: spec.last_name,
+    phone: spec.phone,
+    restaurant_name: spec.restaurant_name,
+  };
+
+  const { error: creErr } = await supabase.auth.admin.createUser({
+    email: spec.email,
+    password: tempPass,
+    email_confirm: true,
+    user_metadata: meta,
+  });
+
+  if (creErr) {
+    const msg = String(creErr.message || creErr || '').toLowerCase();
+    if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) return;
+    throw creErr;
+  }
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -84,6 +140,10 @@ module.exports = async (req, res) => {
   let user;
   try {
     user = await findUserByEmail(supabase, email);
+    if (!user?.email) {
+      await ensureSuperadminUserExists(supabase, email);
+      user = await findUserByEmail(supabase, email);
+    }
   } catch (e) {
     return res.status(500).json({ error: e.message || 'Error buscando usuario' });
   }

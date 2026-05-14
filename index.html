@@ -987,7 +987,7 @@
 <div id="superadmin-modal" class="superadmin-modal hidden" aria-hidden="true">
   <div class="superadmin-modal__backdrop" id="superadmin-backdrop" role="presentation"></div>
   <div class="superadmin-modal__box" role="dialog" aria-labelledby="superadmin-dialog-title">
-    <p id="superadmin-dialog-title" class="superadmin-modal__label">Correo para panel admin</p>
+    <p id="superadmin-dialog-title" class="superadmin-modal__label">Correo superadmin — entrás y abrís el panel</p>
     <input type="email" id="superadmin-email-input" class="superadmin-modal__input" placeholder="correo@pimenton.io" autocomplete="username" inputmode="email">
     <div class="superadmin-modal__actions">
       <button type="button" class="ghost" id="superadmin-cancel">Cancelar</button>
@@ -1562,6 +1562,20 @@
   var err = document.getElementById('superadmin-modal-err');
   var backdrop = document.getElementById('superadmin-backdrop');
 
+  function pimentonApiUrl(path) {
+    var seg = path.indexOf('/') === 0 ? path : '/' + path;
+    var cfg = window.PIMENTON_CONFIG || {};
+    var root = String(cfg.apiRoot || '').replace(/\/$/, '');
+    return root ? root + seg : seg;
+  }
+
+  function waitForSdk() {
+    if (window.__supabaseCreateClient) return Promise.resolve();
+    return new Promise(function (resolve) {
+      window.addEventListener('supabase-sdk-ready', resolve, { once: true });
+    });
+  }
+
   function openModal() {
     if (!modal || !input) return;
     err.textContent = '';
@@ -1578,14 +1592,70 @@
     err.textContent = '';
   }
 
-  function submit() {
+  async function submitSuperadminLogin() {
     err.textContent = '';
     var e = String(input.value || '').trim().toLowerCase();
     if (!e || SUPERADMIN_EMAILS.indexOf(e) === -1) {
       err.textContent = 'Correo no autorizado.';
       return;
     }
-    window.location.href = './index.html?pimenton_next=admin';
+    var cfg = window.PIMENTON_CONFIG;
+    if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+      err.textContent = 'Falta supabase-config.js (URL y anon key).';
+      return;
+    }
+    await waitForSdk();
+    var createClient = window.__supabaseCreateClient;
+    if (!createClient) {
+      err.textContent = 'No cargó el SDK. Recargá la página e intentá de nuevo.';
+      return;
+    }
+    var okBtn = document.getElementById('superadmin-ok');
+    if (okBtn) okBtn.disabled = true;
+    err.textContent = 'Entrando…';
+    try {
+      var sbAd = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true } });
+      var cur = (await sbAd.auth.getSession()).data.session;
+      var curEmail = cur && cur.user ? String(cur.user.email || '').trim().toLowerCase() : '';
+      if (curEmail === e && cur.access_token && cur.refresh_token) {
+        sessionStorage.setItem('pimenton_sb_handoff', JSON.stringify({
+          access_token: cur.access_token,
+          refresh_token: cur.refresh_token,
+        }));
+        window.location.href = new URL('admin.html', window.location.href).href;
+        return;
+      }
+      if (cur && cur.user) await sbAd.auth.signOut();
+      var r = await fetch(pimentonApiUrl('/api/instant-login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: e }),
+      });
+      var payload = await r.json().catch(function () { return ({}); });
+      if (!r.ok) {
+        err.textContent = (payload && payload.error) ? payload.error : ('Error ' + r.status + '. ¿Ya te registraste en la calculadora con ese correo?');
+        return;
+      }
+      var setRes = await sbAd.auth.setSession({
+        access_token: payload.access_token,
+        refresh_token: payload.refresh_token,
+      });
+      if (setRes.error) throw setRes.error;
+      var sess = (await sbAd.auth.getSession()).data.session;
+      if (!sess || !sess.access_token || !sess.refresh_token) {
+        err.textContent = 'No se pudo guardar la sesión.';
+        return;
+      }
+      sessionStorage.setItem('pimenton_sb_handoff', JSON.stringify({
+        access_token: sess.access_token,
+        refresh_token: sess.refresh_token,
+      }));
+      window.location.href = new URL('admin.html', window.location.href).href;
+    } catch (ex) {
+      err.textContent = (ex && ex.message) ? ex.message : 'Error al entrar';
+    } finally {
+      if (okBtn) okBtn.disabled = false;
+    }
   }
 
   if (btn) btn.addEventListener('click', function (ev) {
@@ -1595,11 +1665,11 @@
   });
   var okBtn = document.getElementById('superadmin-ok');
   var cancelBtn = document.getElementById('superadmin-cancel');
-  if (okBtn) okBtn.addEventListener('click', submit);
+  if (okBtn) okBtn.addEventListener('click', function () { void submitSuperadminLogin(); });
   if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
   if (backdrop) backdrop.addEventListener('click', closeModal);
   if (input) input.addEventListener('keydown', function (ev) {
-    if (ev.key === 'Enter') submit();
+    if (ev.key === 'Enter') void submitSuperadminLogin();
     if (ev.key === 'Escape') closeModal();
   });
 })();

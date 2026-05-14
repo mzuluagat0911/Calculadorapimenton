@@ -638,10 +638,32 @@
 
   .btn-text:hover { text-decoration: underline; }
 
+  /* Acceso discreto al panel admin (lista alineada con api/admin-profiles.js) */
+  .superadmin-gate {
+    position: fixed;
+    top: 10px;
+    right: 12px;
+    z-index: 1101;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: lowercase;
+    color: rgba(245, 240, 235, 0.2);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px 8px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .superadmin-gate:hover { color: rgba(245, 240, 235, 0.42); }
+
   #app-shell.hidden { display: none !important; }
 </style>
 </head>
 <body>
+
+<button type="button" id="btn-superadmin" class="superadmin-gate" title="Panel admin">superadmin</button>
 
 <div id="auth-overlay" class="auth-overlay">
   <div class="card auth-card">
@@ -1394,6 +1416,22 @@
   window.setCampaign = setCampaign;
 
   /* ── Init calculadora: se enlaza en onSession() vía bootCalculatorOnce() ── */
+</script>
+
+<script>
+(function () {
+  var SUPERADMIN_EMAILS = ['mateo@pimenton.io', 'juanchi@pimenton.io'];
+  document.getElementById('btn-superadmin').addEventListener('click', function () {
+    var raw = window.prompt('Correo para ingresar al panel admin:');
+    if (raw === null) return;
+    var e = String(raw).trim().toLowerCase();
+    if (!e || SUPERADMIN_EMAILS.indexOf(e) === -1) {
+      window.alert('Correo no autorizado.');
+      return;
+    }
+    window.location.href = 'admin.html';
+  });
+})();
 </script>
 
 </body>

@@ -8,6 +8,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const DEFAULT_ADMIN_EMAILS = ['mateo@pimenton.io', 'juanchi@pimenton.io'];
+/* Misma lista que SUPERADMIN_EMAILS en index.html (botón superadmin). */
 
 function getAdminEmails() {
   const multi = String(process.env.ADMIN_EMAILS || '')

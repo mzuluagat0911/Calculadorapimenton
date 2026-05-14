@@ -643,7 +643,7 @@
     position: fixed;
     top: 10px;
     right: 12px;
-    z-index: 1101;
+    z-index: 10050;
     font-family: 'DM Mono', monospace;
     font-size: 9px;
     font-weight: 500;
@@ -658,12 +658,89 @@
   }
   .superadmin-gate:hover { color: rgba(245, 240, 235, 0.42); }
 
+  .superadmin-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .superadmin-modal.hidden { display: none !important; }
+  .superadmin-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    cursor: pointer;
+  }
+  .superadmin-modal__box {
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    font-family: 'Syne', sans-serif;
+  }
+  .superadmin-modal__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .superadmin-modal__input {
+    width: 100%;
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: 'DM Mono', monospace;
+    color: var(--white);
+    margin-bottom: 14px;
+    outline: none;
+  }
+  .superadmin-modal__input:focus { border-color: var(--red); }
+  .superadmin-modal__actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .superadmin-modal__actions button {
+    font-family: Syne, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+  .superadmin-modal__actions .ghost {
+    background: transparent;
+    color: var(--muted);
+  }
+  .superadmin-modal__actions .primary {
+    background: var(--red);
+    color: var(--white);
+  }
+  .superadmin-modal__err {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--red);
+    margin-top: 12px;
+    min-height: 1.2em;
+  }
+
   #app-shell.hidden { display: none !important; }
 </style>
 </head>
 <body>
-
-<button type="button" id="btn-superadmin" class="superadmin-gate" title="Panel admin">superadmin</button>
 
 <div id="auth-overlay" class="auth-overlay">
   <div class="card auth-card">
@@ -903,6 +980,21 @@
 </div>
 
 <footer>pimenton.io · pricing engine · v1.1</footer>
+</div>
+
+<button type="button" id="btn-superadmin" class="superadmin-gate" title="Panel admin">superadmin</button>
+
+<div id="superadmin-modal" class="superadmin-modal hidden" aria-hidden="true">
+  <div class="superadmin-modal__backdrop" id="superadmin-backdrop" role="presentation"></div>
+  <div class="superadmin-modal__box" role="dialog" aria-labelledby="superadmin-dialog-title">
+    <p id="superadmin-dialog-title" class="superadmin-modal__label">Correo para panel admin</p>
+    <input type="email" id="superadmin-email-input" class="superadmin-modal__input" placeholder="correo@pimenton.io" autocomplete="username" inputmode="email">
+    <div class="superadmin-modal__actions">
+      <button type="button" class="ghost" id="superadmin-cancel">Cancelar</button>
+      <button type="button" class="primary" id="superadmin-ok">Continuar</button>
+    </div>
+    <p id="superadmin-modal-err" class="superadmin-modal__err" aria-live="polite"></p>
+  </div>
 </div>
 
 <script src="supabase-config.js"></script>
@@ -1421,15 +1513,51 @@
 <script>
 (function () {
   var SUPERADMIN_EMAILS = ['mateo@pimenton.io', 'juanchi@pimenton.io'];
-  document.getElementById('btn-superadmin').addEventListener('click', function () {
-    var raw = window.prompt('Correo para ingresar al panel admin:');
-    if (raw === null) return;
-    var e = String(raw).trim().toLowerCase();
+  var btn = document.getElementById('btn-superadmin');
+  var modal = document.getElementById('superadmin-modal');
+  var input = document.getElementById('superadmin-email-input');
+  var err = document.getElementById('superadmin-modal-err');
+  var backdrop = document.getElementById('superadmin-backdrop');
+
+  function openModal() {
+    if (!modal || !input) return;
+    err.textContent = '';
+    input.value = '';
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    setTimeout(function () { input.focus(); }, 50);
+  }
+
+  function closeModal() {
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    err.textContent = '';
+  }
+
+  function submit() {
+    err.textContent = '';
+    var e = String(input.value || '').trim().toLowerCase();
     if (!e || SUPERADMIN_EMAILS.indexOf(e) === -1) {
-      window.alert('Correo no autorizado.');
+      err.textContent = 'Correo no autorizado.';
       return;
     }
     window.location.href = 'admin.html';
+  }
+
+  if (btn) btn.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    openModal();
+  });
+  var okBtn = document.getElementById('superadmin-ok');
+  var cancelBtn = document.getElementById('superadmin-cancel');
+  if (okBtn) okBtn.addEventListener('click', submit);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+  if (backdrop) backdrop.addEventListener('click', closeModal);
+  if (input) input.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') submit();
+    if (ev.key === 'Escape') closeModal();
   });
 })();
 </script>

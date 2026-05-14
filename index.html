@@ -1065,8 +1065,26 @@
     calc();
   }
 
+  /** Si venís de admin sin sesión compartida, ?pimenton_next=admin → tras login te manda al panel. */
+  function consumePimentonNextAfterLogin() {
+    try {
+      var u = new URL(window.location.href);
+      var next = (u.searchParams.get('pimenton_next') || '').trim();
+      if (!next) return false;
+      if (next !== 'admin' && next !== 'admin.html') return false;
+      u.searchParams.delete('pimenton_next');
+      var qs = u.searchParams.toString();
+      window.history.replaceState({}, '', u.pathname + (qs ? '?' + qs : '') + u.hash);
+      window.location.href = new URL('admin.html', window.location.href).href;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   async function onSession(active) {
     if (active) {
+      if (consumePimentonNextAfterLogin()) return;
       showApp(true);
       await refreshUserBar();
       bootCalculatorOnce();

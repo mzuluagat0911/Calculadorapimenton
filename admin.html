@@ -30,7 +30,8 @@
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; vertical-align: top; }
   th { font-family: Syne, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; }
   tr:hover td { background: rgba(255,255,255,0.03); }
-  .empty { color: var(--muted); padding: 24px; text-align: center; font-family: 'DM Mono', monospace; font-size: 13px; }
+  .empty { color: var(--muted); padding: 24px; text-align: center; font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.55; }
+  .empty a { color: var(--red); font-weight: 700; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -78,12 +79,16 @@
   let sb = null;
   let lastRows = [];
 
-  /** getSession() a veces devuelve null hasta que el cliente termina de leer localStorage. */
-  async function waitForSession(client, maxTries, delayMs) {
-    for (let i = 0; i < maxTries; i++) {
+  /** getSession() a veces devuelve null hasta que el cliente lee localStorage; refreshSession rearma con refresh_token. */
+  async function resolveSession(client) {
+    for (let i = 0; i < 30; i++) {
       const { data: { session } } = await client.auth.getSession();
       if (session && session.access_token) return session;
-      await new Promise(function (r) { setTimeout(r, delayMs); });
+      await new Promise(function (r) { setTimeout(r, 80); });
+    }
+    var ref = await client.auth.refreshSession();
+    if (!ref.error && ref.data && ref.data.session && ref.data.session.access_token) {
+      return ref.data.session;
     }
     return null;
   }
@@ -138,10 +143,10 @@
       sb = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true } });
     }
 
-    var session = await waitForSession(sb, 30, 80);
+    var session = await resolveSession(sb);
     if (!session || !session.access_token) {
-      setMsg('No hay sesión. Entrá en la calculadora (index.html) con el correo admin y volvé acá.', 'err');
-      renderTable([], 'Ahora estás en <code>' + location.origin + '</code>. Tenés que abrir <strong>index.html en esta misma dirección</strong> (mismo dominio, con o sin www, y mismo puerto), entrar con mateo@pimenton.io o juanchi@pimenton.io, y volver acá. Si entraste en otro preview de Vercel o en otra pestaña con otra URL, la sesión no se comparte.');
+      setMsg('No hay sesión en este navegador para ' + location.host + '.', 'err');
+      renderTable([], 'Abrí la calculadora <strong>en este mismo sitio</strong> e iniciá sesión con <strong>mateo@pimenton.io</strong> o <strong>juanchi@pimenton.io</strong>. Podés usar este enlace: <a href="./index.html?pimenton_next=admin">Entrar y volver al panel</a> (al entrar te redirige solo a admin).');
       document.getElementById('btn-refresh').disabled = false;
       return;
     }

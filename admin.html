@@ -84,10 +84,10 @@
     el.className = 'msg' + (kind === 'err' ? ' err' : kind === 'ok' ? ' ok' : '');
   }
 
-  function renderTable(rows) {
+  function renderTable(rows, emptyHint) {
     const wrap = document.getElementById('table-wrap');
     if (!rows.length) {
-      wrap.innerHTML = '<div class="empty">No hay registros.</div>';
+      wrap.innerHTML = '<div class="empty">' + (emptyHint || 'No hay registros en la base (o aún no se registró nadie).') + '</div>';
       return;
     }
     const th = ['Correo', 'Nombre', 'Apellido', 'Celular', 'Cel. normalizado', 'Restaurante', 'Alta', 'ID'];
@@ -131,7 +131,7 @@
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.access_token) {
       setMsg('No hay sesión. Entrá en la calculadora (index.html) con el correo admin y volvé acá.', 'err');
-      renderTable([]);
+      renderTable([], 'Sin sesión: abrí <strong>index.html</strong> en el <strong>mismo sitio y puerto</strong> (ej. localhost:3000), iniciá sesión con mateo@pimenton.io o juanchi@pimenton.io, y volvé a esta página.');
       document.getElementById('btn-refresh').disabled = false;
       return;
     }
@@ -150,7 +150,7 @@
       setMsg(lastRows.length + ' registro(s).', 'ok');
     } catch (e) {
       setMsg(e.message || 'Error', 'err');
-      renderTable([]);
+      renderTable([], 'Si estás en local con <code>python -m http.server</code>, la API no existe: usá <code>npx vercel dev</code> para que <code>/api/admin-profiles</code> responda.');
     } finally {
       document.getElementById('btn-refresh').disabled = false;
     }

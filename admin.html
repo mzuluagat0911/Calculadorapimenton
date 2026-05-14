@@ -149,8 +149,19 @@
       document.getElementById('btn-csv').disabled = lastRows.length === 0;
       setMsg(lastRows.length + ' registro(s).', 'ok');
     } catch (e) {
-      setMsg(e.message || 'Error', 'err');
-      renderTable([], 'Si estás en local con <code>python -m http.server</code>, la API no existe: usá <code>npx vercel dev</code> para que <code>/api/admin-profiles</code> responda.');
+      var errMsg = e.message || 'Error';
+      setMsg(errMsg, 'err');
+      var hint = '';
+      if (errMsg.indexOf('no tiene acceso') !== -1) {
+        hint = 'Tu sesión es de <strong>otro correo</strong>. En la calculadora: <strong>Cerrar sesión</strong>, entrá con <strong>mateo@pimenton.io</strong> o <strong>juanchi@pimenton.io</strong> y volvé a admin. Si necesitás otro correo admin, agregalo en Vercel como <code>ADMIN_EMAILS</code>.';
+      } else if (errMsg.indexOf('Sesión inválida') !== -1 || errMsg.indexOf('401') !== -1) {
+        hint = 'Volvé a entrar en <strong>index.html</strong> y abrí admin otra vez.';
+      } else if (errMsg.indexOf('Failed to fetch') !== -1 || errMsg.indexOf('NetworkError') !== -1) {
+        hint = 'No hubo respuesta del servidor. En local con <code>python -m http.server</code> no existe la API: usá <code>npx vercel dev</code>.';
+      } else {
+        hint = 'Si estás en local, probá <code>npx vercel dev</code>. En producción, revisá variables <code>SUPABASE_*</code> y logs en Vercel.';
+      }
+      renderTable([], hint);
     } finally {
       document.getElementById('btn-refresh').disabled = false;
     }

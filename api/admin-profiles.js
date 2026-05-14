@@ -1,8 +1,24 @@
 /**
- * Lista todos los perfiles + email (solo ADMIN_EMAIL, JWT de sesión).
- * Vercel: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, ADMIN_EMAIL
+ * Lista todos los perfiles + email (solo correos superadmin, JWT de sesión).
+ * Vercel: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+ *
+ * Superadmins: variable ADMIN_EMAILS (coma): mateo@pimenton.io,juanchi@pimenton.io
+ * Si no definís ADMIN_EMAILS ni ADMIN_EMAIL, se usan por defecto esos dos correos.
  */
 const { createClient } = require('@supabase/supabase-js');
+
+const DEFAULT_ADMIN_EMAILS = ['mateo@pimenton.io', 'juanchi@pimenton.io'];
+
+function getAdminEmails() {
+  const multi = String(process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter((e) => e.includes('@'));
+  if (multi.length) return multi;
+  const one = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  if (one && one.includes('@')) return [one];
+  return DEFAULT_ADMIN_EMAILS.slice();
+}
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,10 +52,10 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-  if (!adminEmail || !adminEmail.includes('@')) {
+  const adminEmails = getAdminEmails();
+  if (!adminEmails.length) {
     return res.status(503).json({
-      error: 'Falta ADMIN_EMAIL en variables de entorno (correo del administrador).',
+      error: 'Configurá ADMIN_EMAILS (correos separados por coma) o ADMIN_EMAIL.',
     });
   }
 
@@ -65,7 +81,7 @@ module.exports = async (req, res) => {
   if (userErr || !email) {
     return res.status(401).json({ error: 'Sesión inválida o expirada. Volvé a entrar en la calculadora.' });
   }
-  if (email !== adminEmail) {
+  if (!adminEmails.includes(email)) {
     return res.status(403).json({ error: 'Este correo no tiene acceso al panel de administración.' });
   }
 

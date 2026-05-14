@@ -38,7 +38,7 @@
   <h1>Panel <span>admin</span></h1>
   <p class="sub">Registros desde Supabase (misma sesión que la calculadora)</p>
   <div class="bar">
-    <a href="index.html">← Volver a la calculadora</a>
+    <a href="./index.html">← Volver a la calculadora</a>
     <button type="button" id="btn-refresh">Actualizar</button>
     <button type="button" id="btn-csv" class="secondary" disabled>Descargar CSV</button>
   </div>
@@ -77,6 +77,16 @@
 
   let sb = null;
   let lastRows = [];
+
+  /** getSession() a veces devuelve null hasta que el cliente termina de leer localStorage. */
+  async function waitForSession(client, maxTries, delayMs) {
+    for (let i = 0; i < maxTries; i++) {
+      const { data: { session } } = await client.auth.getSession();
+      if (session && session.access_token) return session;
+      await new Promise(function (r) { setTimeout(r, delayMs); });
+    }
+    return null;
+  }
 
   function setMsg(text, kind) {
     const el = document.getElementById('msg');
@@ -128,10 +138,10 @@
       sb = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true } });
     }
 
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session?.access_token) {
+    var session = await waitForSession(sb, 30, 80);
+    if (!session || !session.access_token) {
       setMsg('No hay sesión. Entrá en la calculadora (index.html) con el correo admin y volvé acá.', 'err');
-      renderTable([], 'Sin sesión: abrí <strong>index.html</strong> en el <strong>mismo sitio y puerto</strong> (ej. localhost:3000), iniciá sesión con mateo@pimenton.io o juanchi@pimenton.io, y volvé a esta página.');
+      renderTable([], 'Ahora estás en <code>' + location.origin + '</code>. Tenés que abrir <strong>index.html en esta misma dirección</strong> (mismo dominio, con o sin www, y mismo puerto), entrar con mateo@pimenton.io o juanchi@pimenton.io, y volver acá. Si entraste en otro preview de Vercel o en otra pestaña con otra URL, la sesión no se comparte.');
       document.getElementById('btn-refresh').disabled = false;
       return;
     }
